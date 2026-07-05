@@ -136,6 +136,20 @@
         <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl w-80 border border-slate-700">
             <h3 id="modalTitle" class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest text-center">Ingresa la medida</h3>
             <input type="text" id="modalInput" placeholder="Ej: 50 cm" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-lg text-center focus:outline-none focus:ring-2 focus:ring-rose-500 mb-4">
+            
+            <!-- Paleta de Colores (Oculta por defecto, se muestra solo en modo Círculo) -->
+            <div id="colorPaletteContainer" class="hidden mb-5">
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-3">Color del Círculo</p>
+                <div class="flex justify-center gap-3">
+                    <button onclick="setCircleColor('#0a7c43', '#21c472', this)" class="color-swatch w-6 h-6 rounded-full ring-2 ring-offset-2 ring-offset-slate-900 ring-rose-500 transition-all" style="background: linear-gradient(to right, #0a7c43, #21c472);"></button>
+                    <button onclick="setCircleColor('#1e3a8a', '#3b82f6', this)" class="color-swatch w-6 h-6 rounded-full ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-slate-500 transition-all" style="background: linear-gradient(to right, #1e3a8a, #3b82f6);"></button>
+                    <button onclick="setCircleColor('#be123c', '#f43f5e', this)" class="color-swatch w-6 h-6 rounded-full ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-slate-500 transition-all" style="background: linear-gradient(to right, #be123c, #f43f5e);"></button>
+                    <button onclick="setCircleColor('#581c87', '#a855f7', this)" class="color-swatch w-6 h-6 rounded-full ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-slate-500 transition-all" style="background: linear-gradient(to right, #581c87, #a855f7);"></button>
+                    <button onclick="setCircleColor('#c2410c', '#f97316', this)" class="color-swatch w-6 h-6 rounded-full ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-slate-500 transition-all" style="background: linear-gradient(to right, #c2410c, #f97316);"></button>
+                    <button onclick="setCircleColor('#0f172a', '#475569', this)" class="color-swatch w-6 h-6 rounded-full ring-2 ring-offset-2 ring-offset-slate-900 ring-transparent hover:ring-slate-500 transition-all" style="background: linear-gradient(to right, #0f172a, #475569);"></button>
+                </div>
+            </div>
+
             <div class="flex space-x-2">
                 <button id="cancelText" class="flex-1 px-4 py-2 bg-slate-800 text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all">Cancelar</button>
                 <button id="saveText" class="flex-1 px-4 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm hover:bg-rose-600 transition-all">Guardar</button>
@@ -243,7 +257,7 @@
 
                 <!-- Botón de Círculo Personalizado -->
                 <button onclick="openCircleModal()" class="w-full flex items-center justify-center gap-2 p-3 mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-[#21c472] rounded-xl transition-all group">
-                    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-[#21c472] to-[#0a7c43] flex items-center justify-center text-white text-[10px] font-bold shadow-lg shadow-[#21c472]/30 group-hover:scale-110 transition-transform">T</div>
+                    <div class="w-6 h-6 rounded-full bg-gradient-to-r from-[#0a7c43] to-[#21c472] flex items-center justify-center text-white text-[10px] font-bold shadow-lg shadow-[#21c472]/30 group-hover:scale-110 transition-transform">T</div>
                     <span class="text-[10px] font-bold text-white uppercase tracking-wider">Añadir Círculo de Texto</span>
                 </button>
             </div>
@@ -530,6 +544,22 @@
         let modalMode = 'measure'; // Identificador para la acción del Modal ('measure' o 'circle')
         let alignmentGuides = { vertical: null, horizontal: null };
 
+        // Variables para el Color del Círculo
+        let circleColorDark = '#0a7c43';
+        let circleColorLight = '#21c472';
+
+        function setCircleColor(dark, light, btn) {
+            circleColorDark = dark;
+            circleColorLight = light;
+            // Actualizar visualmente los anillos de la paleta
+            document.querySelectorAll('.color-swatch').forEach(el => {
+                el.classList.remove('ring-rose-500');
+                el.classList.add('ring-transparent');
+            });
+            btn.classList.remove('ring-transparent');
+            btn.classList.add('ring-rose-500');
+        }
+
         // --- Variables y Funciones del Historial ---
         const MAX_HISTORY = 5;
         let historyStack = [];
@@ -594,6 +624,7 @@
         function openCircleModal() {
             modalMode = 'circle';
             document.getElementById('modalTitle').textContent = "Texto del Círculo";
+            document.getElementById('colorPaletteContainer').classList.remove('hidden'); // Mostrar paleta de colores
             MODAL.input.value = "";
             MODAL.input.placeholder = "Ej: 3M";
             MODAL.el.classList.remove('hidden');
@@ -616,10 +647,10 @@
             tCanvas.height = size;
             const tCtx = tCanvas.getContext('2d');
 
-            // Degradado verde tipo 3M
-            const grad = tCtx.createLinearGradient(0, 0, size, size);
-            grad.addColorStop(0, '#21c472'); 
-            grad.addColorStop(1, '#0a7c43'); 
+            // Degradado Horizontal Dinámico (izquierda oscuro -> derecha claro)
+            const grad = tCtx.createLinearGradient(0, 0, size, 0);
+            grad.addColorStop(0, circleColorDark); 
+            grad.addColorStop(1, circleColorLight); 
             
             tCtx.fillStyle = grad;
             tCtx.beginPath();
@@ -1406,6 +1437,7 @@
                             pendingMeasure = {...activeMeasure}; 
                             modalMode = 'measure';
                             document.getElementById('modalTitle').textContent = "Ingresa la medida";
+                            document.getElementById('colorPaletteContainer').classList.add('hidden'); // Ocultar paleta para este modal
                             MODAL.input.placeholder = "Ej: 50 cm";
                             MODAL.el.classList.remove('hidden'); 
                             MODAL.input.value = ""; 
