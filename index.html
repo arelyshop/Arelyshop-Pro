@@ -282,9 +282,9 @@
                             <span class="text-[10px] font-bold text-white">1:1</span>
                             <span class="text-[8px] text-slate-500 uppercase tracking-tighter">1000x1000</span>
                         </button>
-                        <button onclick="setCanvasSize(750, 1000)" id="btn-size-750" class="flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all">
+                        <button onclick="setCanvasSize(1000, 1333)" id="btn-size-750" class="flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all">
                             <span class="text-[10px] font-bold text-white">3:4</span>
-                            <span class="text-[8px] text-slate-500 uppercase tracking-tighter">750x1000</span>
+                            <span class="text-[8px] text-slate-500 uppercase tracking-tighter">1000x1333</span>
                         </button>
                     </div>
                     <!-- Modificado a 3 columnas para incluir WebP -->
@@ -593,8 +593,8 @@
             layers = state.layers.map(cloneLayer); CANVAS_WIDTH = state.width; CANVAS_HEIGHT = state.height;
             canvas.width = CANVAS_WIDTH; canvas.height = CANVAS_HEIGHT; canvas.style.aspectRatio = `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`;
             activeLayerId = state.activeLayerId; selectedLayerIds = [...state.selectedLayerIds];
-            document.getElementById('btn-size-1000').className = CANVAS_WIDTH === 1000 ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
-            document.getElementById('btn-size-750').className = CANVAS_WIDTH === 750 ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
+            document.getElementById('btn-size-1000').className = (CANVAS_WIDTH === 1000 && CANVAS_HEIGHT === 1000) ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
+            document.getElementById('btn-size-750').className = (CANVAS_WIDTH === 1000 && CANVAS_HEIGHT === 1333) ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
             updateUI(); render(); updateHistoryUI();
         }
 
@@ -723,8 +723,8 @@
             canvas.height = h;
             canvas.style.aspectRatio = `${w} / ${h}`; // Fuerza al CSS a mostrar la nueva proporción
 
-            document.getElementById('btn-size-1000').className = w === 1000 ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
-            document.getElementById('btn-size-750').className = w === 750 ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
+            document.getElementById('btn-size-1000').className = (w === 1000 && h === 1000) ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
+            document.getElementById('btn-size-750').className = (w === 1000 && h === 1333) ? 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-rose-500 rounded-xl transition-all' : 'flex flex-col items-center justify-center p-2 bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all';
 
             render();
             showToast(`Lienzo ajustado a ${w}x${h}`);
@@ -1194,8 +1194,11 @@
 
         function render(exportFormat = null) {
             const isExporting = (exportFormat === 'png' || exportFormat === 'jpeg' || exportFormat === 'webp');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (exportFormat === 'jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+            
+            // Fondo SIEMPRE blanco para evitar transparencias, sin importar el formato
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             [...layers].reverse().forEach(l => {
                 if (!l.visible) return;
                 ctx.save();
