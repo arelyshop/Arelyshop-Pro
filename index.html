@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="images/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600&family=Inter:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -599,30 +599,6 @@
             setTimeout(() => MODAL.input.focus(), 50);
         }
 
-        // Utilidad para forzar saltos de línea
-        function wrapText(context, text, x, y, maxWidth, lineHeight) {
-            const words = text.split(' ');
-            let line = '';
-            const lines = [];
-
-            for(let n = 0; n < words.length; n++) {
-                const testLine = line + words[n] + ' ';
-                const metrics = context.measureText(testLine);
-                if (metrics.width > maxWidth && n > 0) {
-                    lines.push(line);
-                    line = words[n] + ' ';
-                } else {
-                    line = testLine;
-                }
-            }
-            lines.push(line);
-            
-            let startY = y - ((lines.length - 1) * lineHeight) / 2;
-            for(let i = 0; i < lines.length; i++) {
-                context.fillText(lines[i].trim(), x, startY + (i * lineHeight));
-            }
-        }
-
         async function createCircleLayer(text) {
             if (!text.trim()) return;
             
@@ -630,7 +606,7 @@
             await document.fonts.ready;
 
             const size = 227;
-            const padding = 20; 
+            const safeWidth = 165; // Área segura (cuadrado inscrito aprox.) para que no toque los bordes curvos
             
             const tCanvas = document.createElement('canvas');
             tCanvas.width = size;
@@ -647,19 +623,66 @@
             tCtx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
             tCtx.fill();
 
-            // Tamaño gigante para textos de 1 a 3 letras
-            let fontSize = 100; 
-            if (text.length > 3) fontSize = 48; 
-            if (text.length > 6) fontSize = 38; 
-            if (text.length > 15) fontSize = 28;
-            if (text.length > 25) fontSize = 22;
-
             tCtx.fillStyle = '#ffffff';
             tCtx.textAlign = 'center';
             tCtx.textBaseline = 'middle';
-            tCtx.font = `900 ${fontSize}px Inter, sans-serif`; // Grosor Black 900
-            
-            wrapText(tCtx, text, size/2, size/2, size - (padding * 2), fontSize * 1.1);
+
+            // --- Algoritmo de auto-ajuste de texto para que JAMÁS se salga ---
+            let fontSize = 100; // Inicia gigante para textos cortos
+            if (text.length > 3) fontSize = 60;
+            if (text.length > 10) fontSize = 40;
+
+            const lineHeightMultiplier = 1.1;
+            let lines = [];
+            let finalFontSize = fontSize;
+
+            do {
+                // Usando la nueva fuente Inter Tight SemiBold 600
+                tCtx.font = `600 ${finalFontSize}px 'Inter Tight', sans-serif`; 
+                const words = text.split(' ');
+                
+                // 1. Verificar si una sola palabra es más ancha que el área segura
+                let wordTooLong = false;
+                for (let w of words) {
+                    if (tCtx.measureText(w).width > safeWidth) {
+                        wordTooLong = true;
+                        break;
+                    }
+                }
+
+                if (wordTooLong) {
+                    finalFontSize -= 2;
+                    continue; // Si es muy larga, reducir tamaño y volver a intentar
+                }
+
+                // 2. Agrupar palabras en líneas usando el tamaño actual
+                let line = '';
+                lines = [];
+                for(let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n] + ' ';
+                    if (tCtx.measureText(testLine).width > safeWidth && n > 0) {
+                        lines.push(line);
+                        line = words[n] + ' ';
+                    } else {
+                        line = testLine;
+                    }
+                }
+                lines.push(line);
+
+                // 3. Verificar si la altura total se sale del círculo
+                const totalHeight = lines.length * (finalFontSize * lineHeightMultiplier);
+                if (totalHeight > safeWidth) {
+                    finalFontSize -= 2; // Si es muy alto, reducir tamaño
+                } else {
+                    break; // El texto cabe perfecto tanto en ancho como en alto
+                }
+            } while (finalFontSize > 10);
+
+            // Dibujar el texto final centrado
+            let startY = (size / 2) - ((lines.length - 1) * (finalFontSize * lineHeightMultiplier)) / 2;
+            for(let i = 0; i < lines.length; i++) {
+                tCtx.fillText(lines[i].trim(), size/2, startY + (i * (finalFontSize * lineHeightMultiplier)));
+            }
 
             const dataUrl = tCanvas.toDataURL('image/png');
             addLayer(dataUrl, "Círculo Texto", "circle_text");
