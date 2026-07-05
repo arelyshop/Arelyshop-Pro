@@ -6,12 +6,6 @@
     <title>Arelyshop Pro - Editor de Fotos</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="images/favicon.png">
-    
-    <!-- Fuente Inter de Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
@@ -137,9 +131,9 @@
     <div id="brush-cursor"></div>
 
     <!-- Modal para ingresar texto/medidas -->
-    <div id="textModal" class="fixed inset-0 flex items-center justify-center hidden z-[10000]">
+    <div id="textModal" class="fixed inset-0 flex items-center justify-center hidden">
         <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl w-80 border border-slate-700">
-            <h3 id="modalTitle" class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest text-center">Ingresa la medida</h3>
+            <h3 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest text-center">Ingresa la medida</h3>
             <input type="text" id="modalInput" placeholder="Ej: 50 cm" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-lg text-center focus:outline-none focus:ring-2 focus:ring-rose-500 mb-4">
             <div class="flex space-x-2">
                 <button id="cancelText" class="flex-1 px-4 py-2 bg-slate-800 text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all">Cancelar</button>
@@ -245,12 +239,6 @@
                         <span class="text-[10px] font-semibold truncate">3M</span>
                     </button>
                 </div>
-                
-                <!-- Botón de Círculo Personalizado -->
-                <button onclick="openCircleModal()" class="w-full flex items-center justify-center gap-2 p-3 mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-[#2596be] rounded-xl transition-all group">
-                    <div class="w-6 h-6 rounded-full bg-[#2596be] flex items-center justify-center text-white text-[10px] font-bold shadow-lg shadow-[#2596be]/30 group-hover:scale-110 transition-transform">T</div>
-                    <span class="text-[10px] font-bold text-white uppercase tracking-wider">Añadir Círculo de Texto</span>
-                </button>
             </div>
 
             <div id="mask-help-box" class="hidden space-y-3 bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
@@ -532,8 +520,6 @@
         let mDragOffset = { x: 0, y: 0 };
         let hasMovedDraggedMeasure = false;
 
-        let modalMode = 'measure'; // Identificador para la acción del Modal ('measure' o 'circle')
-
         let alignmentGuides = { vertical: null, horizontal: null };
 
         // --- Variables y Funciones del Historial ---
@@ -595,76 +581,6 @@
             currentDataUrl: null,
             currentFileName: null
         };
-
-        // --- Funciones para el Círculo de Texto ---
-        function openCircleModal() {
-            modalMode = 'circle';
-            document.getElementById('modalTitle').textContent = "Texto del Círculo";
-            MODAL.input.value = "";
-            MODAL.input.placeholder = "Ej: ¡Nuevo Ingreso!";
-            MODAL.el.classList.remove('hidden');
-            setTimeout(() => MODAL.input.focus(), 50);
-        }
-
-        // Utilidad para forzar saltos de línea y que el texto no se salga
-        function wrapText(context, text, x, y, maxWidth, lineHeight) {
-            const words = text.split(' ');
-            let line = '';
-            const lines = [];
-
-            for(let n = 0; n < words.length; n++) {
-                const testLine = line + words[n] + ' ';
-                const metrics = context.measureText(testLine);
-                if (metrics.width > maxWidth && n > 0) {
-                    lines.push(line);
-                    line = words[n] + ' ';
-                } else {
-                    line = testLine;
-                }
-            }
-            lines.push(line);
-            
-            // Centrar verticalmente el bloque de líneas
-            let startY = y - ((lines.length - 1) * lineHeight) / 2;
-            for(let i = 0; i < lines.length; i++) {
-                context.fillText(lines[i].trim(), x, startY + (i * lineHeight));
-            }
-        }
-
-        function createCircleLayer(text) {
-            if (!text.trim()) return;
-            const size = 227;
-            const padding = 25; // 25px de padding interno para el texto dentro del círculo
-            
-            const tCanvas = document.createElement('canvas');
-            tCanvas.width = size;
-            tCanvas.height = size;
-            const tCtx = tCanvas.getContext('2d');
-
-            // Crear el fondo circular
-            const grad = tCtx.createLinearGradient(0, 0, size, size);
-            grad.addColorStop(0, '#2596be');
-            grad.addColorStop(1, '#2596be');
-            
-            tCtx.fillStyle = grad;
-            tCtx.beginPath();
-            tCtx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
-            tCtx.fill();
-
-            // Dibujar el texto blanco con fuente Inter
-            tCtx.fillStyle = '#ffffff';
-            tCtx.textAlign = 'center';
-            tCtx.textBaseline = 'middle';
-            tCtx.font = '600 24px Inter, sans-serif'; 
-            
-            // Generar los saltos de línea para mantener el texto dentro del padding
-            wrapText(tCtx, text, size/2, size/2, size - (padding * 2), 28);
-
-            // Añadir como capa en el Canvas Principal
-            const dataUrl = tCanvas.toDataURL('image/png');
-            addLayer(dataUrl, "Círculo Texto", "circle_text");
-        }
-        // ------------------------------------------
 
         function setCanvasSize(w, h) {
             CANVAS_WIDTH = w;
@@ -911,10 +827,6 @@
                         case '3m': 
                             layer.x = CANVAS_WIDTH - layer.width - 60; 
                             layer.y = CANVAS_HEIGHT - layer.height - 60; 
-                            break;
-                        case 'circle_text':
-                            layer.x = CANVAS_WIDTH - layer.width - 60;
-                            layer.y = CANVAS_HEIGHT - layer.height - 60;
                             break;
                     }
                 } else {
@@ -1377,26 +1289,7 @@
                     render(); return;
                 }
 
-                if (editorMode === 'measure' && isMouseDown) { 
-                    if (draggingMeasureIdx !== -1) { 
-                        if (!hasMovedDraggedMeasure) measures.splice(draggingMeasureIdx, 1); 
-                        draggingMeasureIdx = -1; 
-                    } else if (activeMeasure) { 
-                        const d = Math.sqrt(Math.pow(activeMeasure.x2-activeMeasure.x1,2)+Math.pow(activeMeasure.y2-activeMeasure.y1,2)); 
-                        if (d > 10) { 
-                            pendingMeasure = {...activeMeasure}; 
-                            
-                            // Reutilizamos el modal para pedir la medida
-                            modalMode = 'measure';
-                            document.getElementById('modalTitle').textContent = "Ingresa la medida";
-                            MODAL.input.placeholder = "Ej: 50 cm";
-                            MODAL.el.classList.remove('hidden'); 
-                            MODAL.input.value = ""; 
-                            setTimeout(()=>MODAL.input.focus(),50); 
-                        } 
-                        activeMeasure = null; 
-                    } 
-                }
+                if (editorMode === 'measure' && isMouseDown) { if (draggingMeasureIdx !== -1) { if (!hasMovedDraggedMeasure) measures.splice(draggingMeasureIdx, 1); draggingMeasureIdx = -1; } else if (activeMeasure) { const d = Math.sqrt(Math.pow(activeMeasure.x2-activeMeasure.x1,2)+Math.pow(activeMeasure.y2-activeMeasure.y1,2)); if (d > 10) { pendingMeasure = {...activeMeasure}; MODAL.el.classList.remove('hidden'); MODAL.input.value = ""; setTimeout(()=>MODAL.input.focus(),50); } activeMeasure = null; } }
                 if (maskMode === 'rect' && isMouseDown) {
                     const pos = getMousePos(e), activeLayer = layers.find(l => l.id === activeLayerId), cx = activeLayer.x+activeLayer.width/2, cy = activeLayer.y+activeLayer.height/2;
                     const sdx = maskWorldStartX-cx, sdy = maskWorldStartY-cy, slx = sdx*Math.cos(-activeLayer.rotation)-sdy*Math.sin(-activeLayer.rotation)+activeLayer.width/2, sly = sdx*Math.sin(-activeLayer.rotation)+sdy*Math.cos(-activeLayer.rotation)+activeLayer.height/2;
@@ -1425,18 +1318,7 @@
             document.getElementById('prop-opacity').onchange = () => saveHistory();
             document.getElementById('prop-scale').onchange = () => saveHistory();
             
-            MODAL.save.onclick = () => { 
-                if (modalMode === 'measure' && pendingMeasure) { 
-                    pendingMeasure.text = MODAL.input.value; 
-                    measures.push(pendingMeasure); 
-                    pendingMeasure = null; 
-                } else if (modalMode === 'circle') {
-                    createCircleLayer(MODAL.input.value);
-                }
-                MODAL.el.classList.add('hidden'); 
-                render(); 
-                saveHistory(); 
-            };
+            MODAL.save.onclick = () => { if(pendingMeasure) { pendingMeasure.text = MODAL.input.value; measures.push(pendingMeasure); pendingMeasure = null; } MODAL.el.classList.add('hidden'); render(); saveHistory(); };
             MODAL.cancel.onclick = () => { pendingMeasure = null; MODAL.el.classList.add('hidden'); render(); };
 
             // Eventos del Modal WebP
