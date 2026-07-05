@@ -8,7 +8,8 @@
     <link rel="icon" type="image/png" href="images/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600&family=Inter:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        /* Se agregó el peso 700 a Inter Tight */
+        @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700&family=Inter:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -606,7 +607,9 @@
             await document.fonts.ready;
 
             const size = 227;
-            const safeWidth = 165; // Área segura (cuadrado inscrito aprox.) para que no toque los bordes curvos
+            const r = size / 2;
+            const padding = 12; // Padding mínimo solicitado
+            const maxRadius = r - padding;
             
             const tCanvas = document.createElement('canvas');
             tCanvas.width = size;
@@ -620,68 +623,61 @@
             
             tCtx.fillStyle = grad;
             tCtx.beginPath();
-            tCtx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            tCtx.arc(r, r, r, 0, Math.PI * 2);
             tCtx.fill();
 
             tCtx.fillStyle = '#ffffff';
             tCtx.textAlign = 'center';
             tCtx.textBaseline = 'middle';
 
-            // --- Algoritmo de auto-ajuste de texto para que JAMÁS se salga ---
-            let fontSize = 100; // Inicia gigante para textos cortos
-            if (text.length > 3) fontSize = 60;
-            if (text.length > 10) fontSize = 40;
-
-            const lineHeightMultiplier = 1.1;
+            // --- Algoritmo Matemático de Ajuste (Teorema de Pitágoras) ---
+            let fontSize = 160; // Empezar muy grande
+            const lineHeightMultiplier = 1.0; // Interlineado apretado
             let lines = [];
-            let finalFontSize = fontSize;
-
-            do {
-                // Usando la nueva fuente Inter Tight SemiBold 600
-                tCtx.font = `600 ${finalFontSize}px 'Inter Tight', sans-serif`; 
+            
+            while (fontSize > 10) {
+                // Usando Inter Tight Bold 700
+                tCtx.font = `700 ${fontSize}px 'Inter Tight', sans-serif`; 
                 const words = text.split(' ');
                 
-                // 1. Verificar si una sola palabra es más ancha que el área segura
-                let wordTooLong = false;
-                for (let w of words) {
-                    if (tCtx.measureText(w).width > safeWidth) {
-                        wordTooLong = true;
-                        break;
-                    }
-                }
-
-                if (wordTooLong) {
-                    finalFontSize -= 2;
-                    continue; // Si es muy larga, reducir tamaño y volver a intentar
-                }
-
-                // 2. Agrupar palabras en líneas usando el tamaño actual
-                let line = '';
                 lines = [];
+                let line = '';
+                const maxWidth = maxRadius * 2; 
+
                 for(let n = 0; n < words.length; n++) {
                     const testLine = line + words[n] + ' ';
-                    if (tCtx.measureText(testLine).width > safeWidth && n > 0) {
-                        lines.push(line);
+                    if (tCtx.measureText(testLine).width > maxWidth && n > 0) {
+                        lines.push(line.trim());
                         line = words[n] + ' ';
                     } else {
                         line = testLine;
                     }
                 }
-                lines.push(line);
+                lines.push(line.trim());
 
-                // 3. Verificar si la altura total se sale del círculo
-                const totalHeight = lines.length * (finalFontSize * lineHeightMultiplier);
-                if (totalHeight > safeWidth) {
-                    finalFontSize -= 2; // Si es muy alto, reducir tamaño
-                } else {
-                    break; // El texto cabe perfecto tanto en ancho como en alto
+                // Calcular el cuadro delimitador (bounding box) real del bloque de texto
+                let textWidth = 0;
+                for (let l of lines) {
+                    textWidth = Math.max(textWidth, tCtx.measureText(l).width);
                 }
-            } while (finalFontSize > 10);
+                const textHeight = lines.length * (fontSize * lineHeightMultiplier);
 
-            // Dibujar el texto final centrado
-            let startY = (size / 2) - ((lines.length - 1) * (finalFontSize * lineHeightMultiplier)) / 2;
+                // Calcular la distancia diagonal desde el centro hasta la esquina más lejana del texto
+                const cornerDist = Math.sqrt(Math.pow(textWidth / 2, 2) + Math.pow(textHeight / 2, 2));
+
+                // Si la esquina no toca el límite del círculo (radio menos padding), hemos encontrado el tamaño perfecto
+                if (cornerDist <= maxRadius) {
+                    break;
+                }
+                
+                // Si choca, encoger un poco e intentar de nuevo
+                fontSize -= 2;
+            }
+
+            // Dibujar el texto centrado con el tamaño perfecto encontrado
+            let startY = r - ((lines.length - 1) * (fontSize * lineHeightMultiplier)) / 2;
             for(let i = 0; i < lines.length; i++) {
-                tCtx.fillText(lines[i].trim(), size/2, startY + (i * (finalFontSize * lineHeightMultiplier)));
+                tCtx.fillText(lines[i], r, startY + (i * (fontSize * lineHeightMultiplier)));
             }
 
             const dataUrl = tCanvas.toDataURL('image/png');
